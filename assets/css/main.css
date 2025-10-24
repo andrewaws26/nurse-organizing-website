@@ -21,3 +21,14 @@ body {
     color: white;
     box-shadow: 0 10px 30px -12px rgba(94, 234, 212, 0.45);
 }
+
+.fade-card {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-card.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}

@@ -68,11 +68,36 @@ const analysisDetails = {
     }
 };
 
+const unionBenefitsCharts = [
+    {
+        canvasId: 'retentionChart',
+        datasetLabel: 'Retention rate (%)',
+        values: [89, 62],
+        suggestedMax: 100,
+        tooltipSuffix: '%'
+    },
+    {
+        canvasId: 'safetyChart',
+        datasetLabel: 'Safety score',
+        values: [4.7, 3.5],
+        suggestedMax: 5,
+        tooltipSuffix: ''
+    },
+    {
+        canvasId: 'payEquityChart',
+        datasetLabel: 'Pay equity index',
+        values: [0.92, 0.68],
+        suggestedMax: 1,
+        tooltipSuffix: ''
+    }
+];
+
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     populateFooterYear();
     initTimeline();
     initAnalysis();
+    initUnionBenefitsSection();
     initAccordion();
 });
 
@@ -223,6 +248,87 @@ function initAnalysis() {
     });
 
     updateAnalysisDetail(analysisDetails['Delay & Decay Appeals']);
+}
+
+function initUnionBenefitsSection() {
+    const section = document.getElementById('union-benefits');
+    if (!section || typeof Chart === 'undefined') {
+        return;
+    }
+
+    const cards = section.querySelectorAll('[data-benefit-card]');
+    if (cards.length) {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        cards.forEach(card => {
+            card.classList.add('fade-card');
+            observer.observe(card);
+        });
+    }
+
+    unionBenefitsCharts.forEach(config => {
+        const canvas = document.getElementById(config.canvasId);
+        if (!canvas) {
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Union', 'Non-Union'],
+                datasets: [{
+                    label: config.datasetLabel,
+                    data: config.values,
+                    backgroundColor: ['rgba(94, 234, 212, 0.8)', 'rgba(14, 165, 233, 0.7)'],
+                    borderColor: ['rgba(94, 234, 212, 1)', 'rgba(14, 165, 233, 1)'],
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { color: '#e2e8f0', font: { size: 11 } },
+                        grid: { color: 'rgba(148, 163, 184, 0.15)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: config.suggestedMax,
+                        ticks: { color: '#cbd5f5' },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        padding: 10,
+                        backgroundColor: 'rgba(2, 6, 23, 0.85)',
+                        titleColor: '#fff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(148, 163, 184, 0.35)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: (context) => {
+                                const base = context.formattedValue;
+                                return config.tooltipSuffix ? `${base}${config.tooltipSuffix}` : base;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
 }
 
 function updateAnalysisDetail(detail) {
