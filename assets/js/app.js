@@ -106,6 +106,107 @@ const unionBenefitsCharts = [
     }
 ];
 
+const outcomeMetrics = {
+    retention: {
+        title: 'Union hospitals keep nurses on the floor',
+        description: 'Louisville hospitals without contracts see roughly 25% RN turnover each year, burning out whole units. Union facilities hold that closer to 11% by locking in fair pay, staffing committees, and due process.',
+        unionValue: 'Retention: 89%',
+        nonUnionValue: 'Retention: 62%',
+        unionBar: 82,
+        nonUnionBar: 55,
+        footnote: 'Source: Louisville nurse organizer testimony, RegisteredNursing.org union vs non-union retention data.',
+        takeaway: 'When fewer nurses leave, patients see familiar faces, orientation costs drop, and units build the muscle to speak up about safety.'
+    },
+    safety: {
+        title: 'Safe staffing cuts preventable harm',
+        description: 'Every extra Louisville patient assigned to a nurse increases mortality risk. Union contracts elsewhere enforce ratios like 1:4 on med-surg and 1:2 in ICU, and pair them with staffing committees that fix problems fast.',
+        unionValue: 'Infection Index: 1.8',
+        nonUnionValue: 'Infection Index: 3.1',
+        unionBar: 65,
+        nonUnionBar: 40,
+        footnote: 'Source: ILR Review unionization study; JAMA nurse staffing research; local incident reports.',
+        takeaway: 'Fewer infections, shorter ER boarding times, and better HCAHPS scores follow when ratios are enforceable.'
+    },
+    pay: {
+        title: 'Union contracts deliver equitable pay scales',
+        description: 'Union nurses nationwide earn about 12% more per week and are far more likely to have employer-paid health coverage and pensions. Transparent wage steps keep Louisville nurses from leaving for travelers or other markets.',
+        unionValue: 'Weekly pay avg: $1,165',
+        nonUnionValue: 'Weekly pay avg: $1,042',
+        unionBar: 78,
+        nonUnionBar: 60,
+        footnote: 'Source: Economic Policy Institute (2024); AFL-CIO Department for Professional Employees.',
+        takeaway: 'Fair pay and benefits retain experienced preceptors and reduce costly reliance on travel nurses.'
+    },
+    voice: {
+        title: 'A union protects the voice behind every safety report',
+        description: 'NLRB rulings show Norton disciplined and interrogated nurses for speaking up. Unionized hospitals negotiate whistleblower protections and grievance steps that shield staff when they escalate unsafe conditions.',
+        unionValue: 'ULP settlements: $0',
+        nonUnionValue: 'ULP settlements: $570K+',
+        unionBar: 90,
+        nonUnionBar: 30,
+        footnote: 'Source: NLRB case files; PNHP “Silencing nurses endangers patients’ care.”',
+        takeaway: 'A contract keeps management from silencing nurses, so patients hear the truth faster.'
+    }
+};
+
+const voiceEntries = [
+    {
+        quote: 'When there’s no union, we stay quiet about unsafe ratios because we’re afraid of losing our jobs. That silence puts patients in danger.',
+        name: 'Ann H., RN',
+        role: 'Cardiovascular Nurse, Norton Audubon'
+    },
+    {
+        quote: 'Every time a nurse leaves, the hospital spends thousands on recruiters instead of staffing. A union would make retention the priority Louisville families deserve.',
+        name: 'Marcus L.',
+        role: 'South Louisville parent & small business owner'
+    },
+    {
+        quote: 'As clergy, I’ve sat with families who waited hours for a bed. Standing with nurses is standing up for the community’s moral obligation to safe care.',
+        name: 'Rev. Carla R.',
+        role: 'Clergy for Safe Staffing Louisville'
+    },
+    {
+        quote: 'The legal delays showed me management will stretch the law to the breaking point. Only a contract gives nurses the teeth to enforce safe staffing.',
+        name: 'Kay T.',
+        role: 'Nurse Organizer & UCW-KY member'
+    }
+];
+
+const staffingData = {
+    medsurg: {
+        recommended: '1 : 4',
+        current: '1 : 6',
+        gapLabel: '+2 patients over safe limit',
+        gapPercent: 60,
+        message: 'This unit needs 2 additional full-time RNs per shift to meet proven safe staffing standards.',
+        action: 'Document every time assignments exceed 1:4 and escalate through the safe staffing committee.'
+    },
+    icu: {
+        recommended: '1 : 2',
+        current: '1 : 3',
+        gapLabel: '+1 patient over safe limit',
+        gapPercent: 70,
+        message: 'Even one extra ICU patient doubles nurse workload and increases risk of missed alarms.',
+        action: 'Secure written refusals for unsafe assignments and pair them with rapid-response alerts.'
+    },
+    er: {
+        recommended: '1 : 4 (acuity-adjusted)',
+        current: '1 : 7',
+        gapLabel: '+3 patients over safe limit',
+        gapPercent: 75,
+        message: 'Boarding times balloon when each nurse juggles seven patients plus triage walk-ins.',
+        action: 'Log wait times and call-ins to show how understaffing hits community emergency care.'
+    },
+    postpartum: {
+        recommended: '1 : 3',
+        current: '1 : 5',
+        gapLabel: '+2 patients over safe limit',
+        gapPercent: 65,
+        message: 'Safe ratios ensure each new family gets education and monitoring in the first 24 hours.',
+        action: 'Collect stories from new parents and channel them into public testimony for safe staffing.'
+    }
+};
+
 let valueLabelPluginRegistered = false;
 
 const unionValueLabelPlugin = {
@@ -152,8 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
     populateFooterYear();
     initTimeline();
     initAnalysis();
+    initOutcomeExplorer();
+    initVoicesCarousel();
     initWhyItMatters();
     initUnionBenefitsSection();
+    initStaffingCalculator();
     initAccordion();
 });
 
@@ -306,6 +410,110 @@ function initAnalysis() {
     updateAnalysisDetail(analysisDetails['Delay & Decay Appeals']);
 }
 
+function initOutcomeExplorer() {
+    const tabs = document.querySelectorAll('.outcome-tab');
+    const title = document.getElementById('outcome-title');
+    const description = document.getElementById('outcome-description');
+    const unionValue = document.getElementById('outcome-union-value');
+    const nonUnionValue = document.getElementById('outcome-nonunion-value');
+    const unionBar = document.getElementById('outcome-union-bar');
+    const nonUnionBar = document.getElementById('outcome-nonunion-bar');
+    const footnote = document.getElementById('outcome-footnote');
+    const takeaway = document.getElementById('outcome-takeaway');
+
+    if (!tabs.length || !title || !description || !unionValue || !nonUnionValue || !unionBar || !nonUnionBar || !footnote || !takeaway) {
+        return;
+    }
+
+    const setOutcome = (key) => {
+        const metric = outcomeMetrics[key];
+        if (!metric) {
+            return;
+        }
+        title.textContent = metric.title;
+        description.textContent = metric.description;
+        unionValue.textContent = metric.unionValue;
+        nonUnionValue.textContent = metric.nonUnionValue;
+        unionBar.style.width = `${metric.unionBar}%`;
+        nonUnionBar.style.width = `${metric.nonUnionBar}%`;
+        footnote.textContent = metric.footnote;
+        takeaway.textContent = metric.takeaway;
+
+        tabs.forEach(tab => {
+            const selected = tab.dataset.outcome === key;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.classList.toggle('border-brand/40', selected);
+            tab.classList.toggle('text-brand-light', selected);
+            tab.classList.toggle('border-white/20', !selected);
+            tab.classList.toggle('text-slate-300', !selected);
+        });
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            setOutcome(tab.dataset.outcome);
+        });
+    });
+
+    setOutcome('retention');
+}
+
+function initVoicesCarousel() {
+    const quote = document.getElementById('voice-quote');
+    const name = document.getElementById('voice-name');
+    const role = document.getElementById('voice-role');
+    const navButtons = document.querySelectorAll('.voice-nav');
+    const indicators = document.querySelectorAll('.voice-indicator');
+
+    if (!quote || !name || !role || !navButtons.length || !indicators.length) {
+        return;
+    }
+
+    let currentIndex = 0;
+    let timerId;
+
+    const render = (index) => {
+        const entry = voiceEntries[index];
+        if (!entry) {
+            return;
+        }
+        quote.innerHTML = `&ldquo;${entry.quote}&rdquo;`;
+        name.textContent = entry.name;
+        role.textContent = entry.role;
+        indicators.forEach(indicator => {
+            const indicatorIndex = Number(indicator.dataset.index);
+            indicator.classList.toggle('bg-brand-light', indicatorIndex === index);
+            indicator.classList.toggle('bg-slate-600', indicatorIndex !== index);
+        });
+    };
+
+    const startTimer = () => {
+        timerId = window.setInterval(() => {
+            currentIndex = (currentIndex + 1) % voiceEntries.length;
+            render(currentIndex);
+        }, 8000);
+    };
+
+    const resetTimer = () => {
+        if (timerId) {
+            window.clearInterval(timerId);
+        }
+        startTimer();
+    };
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const direction = button.dataset.direction === 'prev' ? -1 : 1;
+            currentIndex = (currentIndex + direction + voiceEntries.length) % voiceEntries.length;
+            render(currentIndex);
+            resetTimer();
+        });
+    });
+
+    render(currentIndex);
+    startTimer();
+}
+
 function initWhyItMatters() {
     const section = document.getElementById('why-it-matters');
     if (!section) {
@@ -358,6 +566,39 @@ function initWhyItMatters() {
             }
         });
     });
+}
+
+function initStaffingCalculator() {
+    const unitSelect = document.getElementById('calculator-unit');
+    const recommended = document.getElementById('calc-recommended');
+    const current = document.getElementById('calc-current');
+    const gapLabel = document.getElementById('calc-gap-label');
+    const gapBar = document.getElementById('calc-gap-bar');
+    const message = document.getElementById('calc-message');
+    const action = document.getElementById('calc-action');
+
+    if (!unitSelect || !recommended || !current || !gapLabel || !gapBar || !message || !action) {
+        return;
+    }
+
+    const renderCalculator = (unitKey) => {
+        const data = staffingData[unitKey];
+        if (!data) {
+            return;
+        }
+        recommended.textContent = data.recommended;
+        current.textContent = data.current;
+        gapLabel.textContent = data.gapLabel;
+        gapBar.style.width = `${Math.min(Math.max(data.gapPercent, 5), 100)}%`;
+        message.textContent = data.message;
+        action.textContent = data.action;
+    };
+
+    unitSelect.addEventListener('change', () => {
+        renderCalculator(unitSelect.value);
+    });
+
+    renderCalculator(unitSelect.value);
 }
 
 function initUnionBenefitsSection() {
