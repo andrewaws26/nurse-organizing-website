@@ -275,7 +275,16 @@
                     <div class="mt-6 h-44">
                         <canvas id="retentionChart"></canvas>
                     </div>
-                    <p class="mt-4 text-xs uppercase tracking-[0.25em] text-slate-400">Retention rate (%)</p>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-brand-light"></span>
+                            <span>Union: <span class="font-semibold text-white" data-union-benefit-label="retention-union">89%</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                            <span>Non-union: <span class="font-semibold text-white" data-union-benefit-label="retention-non">62%</span></span>
+                        </div>
+                    </div>
                 </article>
                 <article class="fade-card border border-white/10 bg-slate-950/70 p-6 text-sm text-slate-200" data-benefit-card>
                     <p class="text-xs uppercase tracking-[0.3em] text-brand-light">Comparison</p>
@@ -284,7 +293,16 @@
                     <div class="mt-6 h-44">
                         <canvas id="safetyChart"></canvas>
                     </div>
-                    <p class="mt-4 text-xs uppercase tracking-[0.25em] text-slate-400">Safety score (1 - 5 scale)</p>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-brand-light"></span>
+                            <span>Union: <span class="font-semibold text-white" data-union-benefit-label="safety-union">4.7</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                            <span>Non-union: <span class="font-semibold text-white" data-union-benefit-label="safety-non">3.5</span></span>
+                        </div>
+                    </div>
                 </article>
                 <article class="fade-card border border-white/10 bg-slate-950/70 p-6 text-sm text-slate-200" data-benefit-card>
                     <p class="text-xs uppercase tracking-[0.3em] text-brand-light">Comparison</p>
@@ -293,7 +311,16 @@
                     <div class="mt-6 h-44">
                         <canvas id="payEquityChart"></canvas>
                     </div>
-                    <p class="mt-4 text-xs uppercase tracking-[0.25em] text-slate-400">Equity index (0 - 1)</p>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-300">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-brand-light"></span>
+                            <span>Union: <span class="font-semibold text-white" data-union-benefit-label="pay-union">0.92</span></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                            <span>Non-union: <span class="font-semibold text-white" data-union-benefit-label="pay-non">0.68</span></span>
+                        </div>
+                    </div>
                 </article>
             </div>
         </div>

@@ -68,29 +68,84 @@ const analysisDetails = {
     }
 };
 
+const benefitColorPalette = {
+    unionBg: 'rgba(94, 234, 212, 0.85)',
+    unionBorder: 'rgba(94, 234, 212, 1)',
+    nonUnionBg: 'rgba(251, 191, 36, 0.85)',
+    nonUnionBorder: 'rgba(251, 191, 36, 1)'
+};
+
 const unionBenefitsCharts = [
     {
+        key: 'retention',
         canvasId: 'retentionChart',
         datasetLabel: 'Retention rate (%)',
         values: [89, 62],
         suggestedMax: 100,
-        tooltipSuffix: '%'
+        tooltipSuffix: '%',
+        tickStep: 10,
+        formatter: (value) => `${Math.round(value)}%`
     },
     {
+        key: 'safety',
         canvasId: 'safetyChart',
-        datasetLabel: 'Safety score',
+        datasetLabel: 'Patient safety score (1-5)',
         values: [4.7, 3.5],
         suggestedMax: 5,
-        tooltipSuffix: ''
+        tickStep: 0.5,
+        formatter: (value) => value.toFixed(1)
     },
     {
+        key: 'pay',
         canvasId: 'payEquityChart',
-        datasetLabel: 'Pay equity index',
+        datasetLabel: 'Pay equity index (0-1)',
         values: [0.92, 0.68],
         suggestedMax: 1,
-        tooltipSuffix: ''
+        tickStep: 0.1,
+        formatter: (value) => value.toFixed(2)
     }
 ];
+
+let valueLabelPluginRegistered = false;
+
+const unionValueLabelPlugin = {
+    id: 'unionValueLabels',
+    afterDatasetsDraw(chart) {
+        const pluginOpts = chart.options.plugins?.valueLabels;
+        if (!pluginOpts?.enabled) {
+            return;
+        }
+
+        const meta = chart.getDatasetMeta(0);
+        const dataset = chart.data.datasets[0];
+        const formatter = dataset.valueFormatter || ((value) => value);
+        const { ctx } = chart;
+
+        meta.data.forEach((bar, index) => {
+            const value = dataset.data[index];
+            const display = formatter(value, index);
+            const { x, y } = bar.tooltipPosition();
+
+            ctx.save();
+            ctx.fillStyle = pluginOpts.color || '#e2e8f0';
+            ctx.font = pluginOpts.font || '600 12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(display, x, y - 6);
+            ctx.restore();
+        });
+    }
+};
+
+const defaultBenefitFormatter = (value, suffix = '') => {
+    if (suffix === '%') {
+        return `${Math.round(value)}%`;
+    }
+    if (value < 10 && value !== Math.round(value)) {
+        return value.toFixed(1);
+    }
+    return `${value}${suffix}`;
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
@@ -256,6 +311,11 @@ function initUnionBenefitsSection() {
         return;
     }
 
+    if (!valueLabelPluginRegistered) {
+        Chart.register(unionValueLabelPlugin);
+        valueLabelPluginRegistered = true;
+    }
+
     const cards = section.querySelectorAll('[data-benefit-card]');
     if (cards.length) {
         const observer = new IntersectionObserver((entries, obs) => {
@@ -280,6 +340,7 @@ function initUnionBenefitsSection() {
         }
 
         const ctx = canvas.getContext('2d');
+        const valueFormatter = config.formatter || ((value) => defaultBenefitFormatter(value, config.tooltipSuffix));
         new Chart(ctx, {
             type: 'bar',
             data: {
@@ -287,26 +348,42 @@ function initUnionBenefitsSection() {
                 datasets: [{
                     label: config.datasetLabel,
                     data: config.values,
-                    backgroundColor: ['rgba(94, 234, 212, 0.8)', 'rgba(14, 165, 233, 0.7)'],
-                    borderColor: ['rgba(94, 234, 212, 1)', 'rgba(14, 165, 233, 1)'],
+                    backgroundColor: [benefitColorPalette.unionBg, benefitColorPalette.nonUnionBg],
+                    borderColor: [benefitColorPalette.unionBorder, benefitColorPalette.nonUnionBorder],
                     borderWidth: 1,
                     borderRadius: 12,
-                    borderSkipped: false
+                    borderSkipped: false,
+                    valueFormatter
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: {
+                        top: 12
+                    }
+                },
                 scales: {
                     x: {
                         ticks: { color: '#e2e8f0', font: { size: 11 } },
-                        grid: { color: 'rgba(148, 163, 184, 0.15)' }
+                        grid: { color: 'rgba(148, 163, 184, 0.15)', drawBorder: false }
                     },
                     y: {
                         beginAtZero: true,
                         suggestedMax: config.suggestedMax,
-                        ticks: { color: '#cbd5f5' },
-                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                        ticks: {
+                            color: '#cbd5f5',
+                            stepSize: config.tickStep,
+                            callback: (value) => valueFormatter(typeof value === 'number' ? value : Number(value))
+                        },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)', drawBorder: false },
+                        title: {
+                            display: true,
+                            text: config.datasetLabel,
+                            color: '#e2e8f0',
+                            font: { size: 12, weight: '600' }
+                        }
                     }
                 },
                 plugins: {
@@ -319,15 +396,27 @@ function initUnionBenefitsSection() {
                         borderColor: 'rgba(148, 163, 184, 0.35)',
                         borderWidth: 1,
                         callbacks: {
-                            label: (context) => {
-                                const base = context.formattedValue;
-                                return config.tooltipSuffix ? `${base}${config.tooltipSuffix}` : base;
-                            }
+                            title: (context) => context[0]?.label || '',
+                            label: (context) => `${context.label}: ${valueFormatter(context.parsed.y ?? context.parsed)}`
                         }
+                    },
+                    valueLabels: {
+                        enabled: true,
+                        color: '#e2e8f0'
                     }
                 }
             }
         });
+
+        const unionLabel = section.querySelector(`[data-union-benefit-label="${config.key}-union"]`);
+        if (unionLabel) {
+            unionLabel.textContent = valueFormatter(config.values[0]);
+        }
+
+        const nonLabel = section.querySelector(`[data-union-benefit-label="${config.key}-non"]`);
+        if (nonLabel) {
+            nonLabel.textContent = valueFormatter(config.values[1]);
+        }
     });
 }
 
