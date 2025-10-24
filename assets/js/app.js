@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateFooterYear();
     initTimeline();
     initAnalysis();
+    initWhyItMatters();
     initUnionBenefitsSection();
     initAccordion();
 });
@@ -303,6 +304,60 @@ function initAnalysis() {
     });
 
     updateAnalysisDetail(analysisDetails['Delay & Decay Appeals']);
+}
+
+function initWhyItMatters() {
+    const section = document.getElementById('why-it-matters');
+    if (!section) {
+        return;
+    }
+
+    const cards = section.querySelectorAll('[data-why-card]');
+    if (cards.length) {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        cards.forEach(card => {
+            card.classList.add('fade-card');
+            observer.observe(card);
+        });
+    }
+
+    section.querySelectorAll('[data-why-trigger]').forEach(trigger => {
+        const panelId = trigger.getAttribute('aria-controls');
+        const panel = panelId ? document.getElementById(panelId) : null;
+        const icon = trigger.querySelector('[data-why-icon]');
+
+        if (!panel) {
+            return;
+        }
+
+        panel.setAttribute('aria-hidden', 'true');
+
+        const toggle = () => {
+            const expanded = trigger.getAttribute('aria-expanded') === 'true';
+            trigger.setAttribute('aria-expanded', String(!expanded));
+            panel.classList.toggle('hidden', expanded);
+            panel.setAttribute('aria-hidden', expanded ? 'true' : 'false');
+            if (icon) {
+                icon.classList.toggle('rotate-180', !expanded);
+            }
+        };
+
+        trigger.addEventListener('click', toggle);
+        trigger.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle();
+            }
+        });
+    });
 }
 
 function initUnionBenefitsSection() {
