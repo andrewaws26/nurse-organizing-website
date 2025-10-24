@@ -1,0 +1,23 @@
+/* Site-wide styling tweaks layered on top of Tailwind utility classes. */
+
+body {
+    background: radial-gradient(ellipse at top, rgba(20, 184, 166, 0.12), transparent),
+                radial-gradient(ellipse at bottom, rgba(15, 23, 42, 0.85), #020617);
+    min-height: 100vh;
+}
+
+.bg-grid {
+    background-image: radial-gradient(circle at center, rgba(148, 163, 184, 0.22) 1px, transparent 0);
+    background-size: 32px 32px;
+}
+
+.timeline-chip {
+    transition: all 0.3s ease;
+}
+
+.timeline-chip[data-active="true"] {
+    background: linear-gradient(120deg, rgba(94, 234, 212, 0.14), rgba(14, 116, 144, 0.25));
+    border-color: rgba(94, 234, 212, 0.4);
+    color: white;
+    box-shadow: 0 10px 30px -12px rgba(94, 234, 212, 0.45);
+}
