@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nurse Unionizing in Louisville: An Interactive Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <!-- Chosen Palette: Warm Neutral -->
+    <!-- Application Structure Plan: 
+        Structure: A single-page, vertically scrolling thematic design. A persistent top navigation bar (Home, Timeline, Tactics, Analysis, Recommendations) allows users to jump to sections, facilitating non-linear exploration.
+        Sections:
+        1. Home/Overview: A hero section with the title, a summary of the key finding (no successful unions due to intense, often illegal, opposition), and a "Key Takeaways" card deck.
+        2. Timeline: An interactive HTML/CSS timeline. Clicking a point on the timeline dynamically updates a "details" card, making the history digestible.
+        3. Tactics: A two-column "Playbook" comparing organizer and management tactics. Clicking any card opens a modal (div overlay) with a detailed description.
+        4. Analysis: An interactive "dashboard" featuring a Chart.js horizontal bar chart visualizing the "Key Barriers." Clicking a bar on the chart updates a central text block to explain that factor in detail.
+        5. Recommendations: An accordion component built with HTML/JS, allowing users to expand each recommendation.
+        User Flow: User lands on a clear summary. They can scroll linearly or use the nav to jump to a specific interest (e.g., "Why did it fail?"). The interactive elements (timeline, tactic modals, analysis chart, accordion) encourage active exploration.
+        Justification: This structure transforms a dense, text-based report into an exploratory experience. It isolates key concepts (Timeline, Tactics, Analysis) into interactive modules, which is much more user-friendly and aids comprehension, especially for the "Tactics" and "Analysis" sections where direct comparison and interaction are valuable.
+    -->
+    <!-- Visualization & Content Choices:
+        - Report Info: Historical Events (1989-2000s) -> Goal: Show chronology -> Viz/Presentation: HTML/CSS Timeline -> Interaction: Click event to update a separate details box. -> Justification: More engaging and less overwhelming than a long text block. Method: HTML/CSS/JS.
+        - Report Info: Organizer & Management Tactics -> Goal: Compare opposing strategies -> Viz/Presentation: Two-column card layout with modals -> Interaction: Click card to open a modal (div overlay) with details. -> Justification: Directly contrasts the "playbook" for each side and hides detailed text until requested. Method: HTML/CSS/JS.
+        - Report Info: Analysis of Failure -> Goal: Visualize the relative impact of key factors -> Viz/Presentation: Horizontal Bar Chart (Chart.js) -> Interaction: Click on a bar (e.g., "Legal Delays") to update a text area with the full explanation. Tooltips on hover. -> Justification: Provides a strong visual anchor for the analysis. The interactivity directly links the visual data to the qualitative text. Method: Chart.js/Canvas + JS click handler.
+        - Report Info: Recommendations -> Goal: Present actionable advice clearly -> Viz/Presentation: Accordion component -> Interaction: Click to expand/collapse each recommendation. -> Justification: Clean, scannable, and allows users to focus on one recommendation at a time. Method: HTML/CSS/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        :root {
+            --color-bg: #f8f7f4;
+            --color-text: #333333;
+            --color-primary: #004d40;
+            --color-primary-light: #e0f2f1;
+            --color-secondary: #424242;
+            --color-accent: #ffc107;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+        }
+        nav {
+            background-color: rgba(248, 247, 244, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .nav-link {
+            @apply px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition-colors;
+        }
+        .nav-link.active {
+            @apply bg-gray-900 text-white;
+        }
+        h1, h2 {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        h2 {
+            @apply text-3xl font-bold mb-6;
+        }
+        .section {
+            @apply w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24;
+        }
+        .card {
+            @apply bg-white rounded-lg shadow-lg overflow-hidden transition-shadow duration-300 hover:shadow-xl;
+        }
+        .modal-overlay {
+            @apply fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out;
+        }
+        .modal-content {
+            @apply bg-white rounded-lg shadow-xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto transition-all duration-300 ease-in-out;
+        }
+        .modal-overlay.opacity-0 {
+            /* This is a utility, but we ensure transition */
+            transition-property: opacity, visibility;
+        }
+        .modal-overlay.opacity-0 .modal-content {
+            @apply transform scale-95 opacity-0;
+        }
+        .timeline-item {
+            @apply relative pl-8 sm:pl-0;
+        }
+        .timeline-item:not(:last-child) {
+            @apply pb-10;
+        }
+        .timeline-item .timeline-dot {
+            @apply absolute left-0 top-1.5 w-4 h-4 rounded-full border-4 border-white ring-4 ring-gray-300;
+            background-color: var(--color-primary);
+            margin-left: -2px;
+        }
+        .timeline-item .timeline-line {
+            @apply absolute left-0 top-1.5 w-0.5 h-full bg-gray-300 -ml-px;
+        }
+        @media (min-width: 640px) {
+            .timeline-item {
+                @apply w-1/2;
+            }
+            .timeline-item:nth-child(odd) {
+                @apply pr-8 text-right;
+            }
+            .timeline-item:nth-child(even) {
+                @apply pl-8 sm:ml-auto;
+            }
+            .timeline-item:nth-child(odd) .timeline-dot {
+                @apply left-1/2 -ml-2;
+            }
+            .timeline-item:nth-child(even) .timeline-dot {
+                @apply left-1/2 -ml-2;
+            }
+            .timeline-item:nth-child(odd) .timeline-line {
+                @apply left-1/2 -ml-px;
+            }
+            .timeline-item:nth-child(even) .timeline-line {
+                @apply left-1/2 -ml-px;
+            }
+        }
+        .accordion-header {
+            @apply flex justify-between items-center w-full py-4 px-5 text-left font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-gray-500 focus-visible:ring-opacity-75 transition-colors;
+        }
+        .accordion-content {
+            @apply mt-2 mb-4 px-5 pb-4 text-gray-600 overflow-hidden transition-all duration-500 ease-in-out;
+            max-height: 0px;
+        }
+        .accordion-content.open {
+            max-height: 1000px; /* Set to a large value to allow content to expand */
+        }
+        .accordion-chevron {
+            @apply transition-transform duration-300;
+        }
+        .accordion-header[aria-expanded="true"] .accordion-chevron {
+            @apply rotate-180;
+        }
+        .tactic-card {
+            @apply bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-300;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Modal Container -->
+    <div id="modal" class="modal-overlay opacity-0 pointer-events-none" role="dialog" aria-modal="true" aria-hidden="true" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-2xl font-bold" style="color: var(--color-primary);">Tactic Details</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </div>
+            <p id="modal-body" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <!-- Header & Navigation -->
+    <header class="sticky top-0 z-40 w-full shadow-sm">
+        <nav class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex-shrink-0">
+                    <span class="text-xl font-bold" style="color: var(--color-primary);">Louisville Nurse Organizing</span>
+                </div>
+                <div class="hidden sm:block sm:ml-6">
+                    <div class="flex space-x-4">
+                        <a href="#home" class="nav-link nav-item" data-section="home">Home</a>
+                        <a href="#timeline" class="nav-link nav-item" data-section="timeline">Timeline</a>
+                        <a href="#tactics" class="nav-link nav-item" data-section="tactics">Tactics</a>
+                        <a href="#analysis" class="nav-link nav-item" data-section="analysis">Analysis</a>
+                        <a href="#recommendations" class="nav-link nav-item" data-section="recommendations">Path Forward</a>
+                    </div>
+                </div>
+                <div class="sm:hidden">
+                    <button id="mobile-menu-button" class="text-gray-700 p-2 rounded-md hover:bg-gray-200 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden sm:hidden pb-3 space-y-1">
+                <a href="#home" class="block nav-link nav-item" data-section="home">Home</a>
+                <a href="#timeline" class="block nav-link nav-item" data-section="timeline">Timeline</a>
+                <a href="#tactics" class="block nav-link nav-item" data-section="tactics">Tactics</a>
+                <a href="#analysis" class="block nav-link nav-item" data-section="analysis">Analysis</a>
+                <a href="#recommendations" class="block nav-link nav-item" data-section="recommendations">Path Forward</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+
+        <!-- Home/Overview Section -->
+        <section id="home" class="section text-center" style="background-color: var(--color-primary-light); padding-top: 6rem; padding-bottom: 6rem;">
+            <h1 class="text-4xl sm:text-5xl font-extrabold mb-6">The Struggle for Representation</h1>
+            <p class="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto mb-10">
+                An interactive report on the history of nurse unionizing efforts in Louisville, Kentucky, detailing the persistent attempts by nurses and the formidable opposition they face.
+            </p>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12">
+                This application explores the decades-long fight for a nurse's union in Louisville. Despite numerous organizing drives, most notably by the Nurses Professional Organization (NPO) and National Nurses United (NNU), no major hospital system in the city currently has a registered nurse union. This report analyzes the tactics used by both organizers and management, the factors contributing to these failures, and potential strategies for the future.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card p-6">
+                    <h3 class="font-bold text-xl mb-2" style="color: var(--color-primary);">Decades of Effort</h3>
+                    <p class="text-gray-600">Organizing attempts span from at least 1989 to the present, showing a persistent desire for representation.</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-xl mb-2" style="color: var(--color-primary);">Aggressive Opposition</h3>
+                    <p class="text-gray-600">Hospital systems like Norton Healthcare and its predecessors have consistently used legal and coercive tactics to halt union drives.</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-xl mb-2" style="color: var(--color-primary);">Legal & Political Barriers</h3>
+                    <p class="text-gray-600">Slow-moving labor laws and Kentucky's "right-to-work" status create a difficult environment for successful organizing.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section id="timeline" class="section">
+            <h2 class="text-center">A Decades-Long Struggle: Timeline of Events</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+                The fight for nurse representation in Louisville is not new. It's a multi-decade story of persistent organizing, legal battles, and intense corporate opposition. Click on any event in the timeline to see more details about that moment in the struggle.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div class="lg:col-span-2 relative">
+                    <div class="timeline-container">
+                        <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content card p-4 cursor-pointer" onclick="showTimelineDetail('1989')">
+                                <h3 class="font-bold text-lg">1989: NPO Forms</h3>
+                                <p class="text-sm text-gray-600">Nurses form the Nurses Professional Organization (NPO) and attempt to organize at Norton Audubon, then owned by Humana. The election fails.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content card p-4 cursor-pointer" onclick="showTimelineDetail('1994')">
+                                <h3 class="font-bold text-lg">1994: Election Overturned</h3>
+                                <p class="text-sm text-gray-600">NPO holds another election at Audubon, now owned by Columbia/HCA. The union loses, but the election is later overturned by the NLRB due to management's illegal anti-union tactics.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content card p-4 cursor-pointer" onclick="showTimelineDetail('1998')">
+                                <h3 class="font-bold text-lg">1998: Norton Takeover</h3>
+                                <p class="text-sm text-gray-600">Norton Healthcare takes control of Audubon Hospital. Despite an NLRB bargaining order, Norton refuses to negotiate, beginning a 9-year legal battle.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content card p-4 cursor-pointer" onclick="showTimelineDetail('2000s')">
+                                <h3 class="font-bold text-lg">2000s: Legal Battles</h3>
+                                <p class="text-sm text-gray-600">The NPO, now affiliated with CNA/NNOC, engages in protracted legal fights. Norton Healthcare pays over $570,000 in settlements for unfair labor practices, including illegal firings.</p>
+                            </div>
+                        </div>
+                         <div class="timeline-item">
+                            <div class="timeline-line"></div>
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content card p-4 cursor-pointer" onclick="showTimelineDetail('2010s')">
+                                <h3 class="font-bold text-lg">2010s-Present: Continued Efforts</h3>
+                                <p class="text-sm text-gray-600">Despite major legal victories, the organizing drives lose momentum. New efforts by groups like UCW Kentucky emerge, focusing on key issues like staffing and safety, but no major hospital is unionized.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-1 sticky top-24">
+                    <div id="timeline-detail" class="card p-6" style="background-color: var(--color-primary-light);">
+                        <h3 class="font-bold text-xl mb-3" style="color: var(--color-primary);">Click an Event</h3>
+                        <p class="text-gray-700">Select an event from the timeline to learn more about it. The details will appear here.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tactics Section -->
+        <section id="tactics" class="section" style="background-color: #ffffff;">
+            <h2 class="text-center">The Organizing Playbook</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+                Organizing a union involves a predictable set of strategies from both nurses and hospital management. Management's anti-union campaigns are often highly sophisticated and funded by professional consultants. Click on any card to learn more about that specific tactic.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-center" style="color: var(--color-primary);">Organizer Tactics</h3>
+                    <div class="space-y-4">
+                        <div class="tactic-card" onclick="openModal('Card Signing', 'This is the first legal step. Organizers must get a significant portion of the nursing staff (at least 30% to file, but ideally over 50-60%) to sign cards authorizing the union to represent them in collective bargaining.')">
+                            <h4 class="font-bold text-lg">Signing Authorization Cards</h4>
+                            <p class="text-gray-600">The formal process of gathering support to petition for an election.</p>
+                        </div>
+                        <div class="tactic-card" onclick="openModal('Public Actions', 'Organizers hold informational pickets, rallies, and media events to draw public attention to their key issues, such as unsafe staffing ratios, falling pay, or poor working conditions. This builds community support and puts public pressure on the hospital.')">
+                            <h4 class="font-bold text-lg">Public Rallies & Media</h4>
+                            <p class="text-gray-600">Using public events and press to highlight issues like patient safety.</p>
+                        </div>
+                        <div class="tactic-card" onclick="openModal('NLRB Charges', 'When management breaks the law (e.g., by firing a union supporter or threatening nurses), the union files Unfair Labor Practice (ULP) charges with the National Labor Relations Board. This was a key NPO tactic in Louisville, leading to overturned elections and monetary settlements.')">
+                            <h4 class="font-bold text-lg">Filing NLRB Charges</h4>
+                            <p class="text-gray-600">Using the legal system to fight illegal anti-union actions by management.</p>
+                        </div>
+                        <div class="tactic-card" onclick="openModal('Building Alliances', 'Organizers affiliate with large, powerful national unions like National Nurses United (NNU) to gain access to resources, legal expertise, and a larger strategic framework. They also attempt to build support from local politicians and community groups.')">
+                            <h4 class="font-bold text-lg">Affiliating with National Unions</h4>
+                            <p class="text-gray-600">Gaining legal and financial resources from established unions like NNU.</p>
+                        </div>
+                        <div class="tactic-card" onclick="openModal('Striking & the Threat of a Strike', 'This is labor\'s most powerful leverage, often used as a last resort. By collectively agreeing to stop working, nurses can create immense financial and operational pressure on the hospital. Often, the *threat* of a credible strike alone is enough to force management to make concessions on staffing, pay, and patient safety. Strikes in healthcare are complex due to patient care and subject to specific legal notices.')">
+                            <h4 class="font-bold text-lg">Striking & Threat of Strike</h4>
+                            <p class="text-gray-600">The ultimate leverage: collectively withholding labor to force concessions.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-center text-red-700">Management & Anti-Union Tactics</h3>
+                    <div class="space-y-4">
+                        <div class="tactic-card border-l-4 border-red-500" onclick="openModal('Anti-Union Consultants', 'Hospitals hire expensive law firms and consulting agencies that specialize in "union avoidance." These consultants design the entire anti-union campaign, from literature to mandatory meetings, with the goal of creating fear and doubt.')">
+                            <h4 class="font-bold text-lg">Hiring Anti-Union Consultants</h4>
+                            <p class="text-gray-600">Employing specialized firms to design and run the counter-campaign.</p>
+                        </div>
+                        <div class="tactic-card border-l-4 border-red-500" onclick="openModal('Captive Audience Meetings', 'This is management\'s most powerful tool. Nurses are required to attend mandatory meetings during their shift where hospital leaders and consultants present anti-union propaganda. They often spread misleading information about union dues, warn of lost flexibility, and claim the union is a "third party" that will hurt patient care.')">
+                            <h4 class="font-bold text-lg">Captive Audience Meetings</h4>
+                            <p class="text-gray-600">Forcing nurses to attend mandatory anti-union presentations.</p>
+                        </div>
+                        <div class="tactic-card border-l-4 border-red-500" onclick="openModal('Intimidation & Illegal Actions', 'Management uses fear to break the organizing drive. This includes one-on-one meetings where managers question nurses about their support, illegally threatening to revoke benefits, and firing or disciplining vocal union supporters under false pretenses (e.g., "patient neglect"). This was seen in Louisville with the firing of organizer Jane Gentry.')">
+                            <h4 class="font-bold text-lg">Intimidation & Illegal Firings</h4>
+                            <p class="text-gray-600">Targeting and firing vocal union supporters to scare other nurses.</p>
+                        </div>
+                        <div class="tactic-card border-l-4 border-red-500" onclick="openModal('Legal Delays', 'Even if the union wins an election, management can refuse to bargain and appeal the results, tying the process up in court for years. Norton Healthcare successfully used this tactic for 9 years after 1998, effectively killing the union drive despite the NLRB ordering them to bargain. By the time the legal battle is over, the organizing momentum is gone.')">
+                            <h4 class="font-bold text-lg">Legal Delays & Appeals</h4>
+                            <p class="text-gray-600">Using the slow legal system to delay bargaining until the union drive dies.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analysis Section -->
+        <section id="analysis" class="section">
+            <h2 class="text-center">Analysis: Why No Successful Nurse Union?</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+                Despite decades of effort, Louisville remains a non-union town for hospital nurses. The failure is not due to a single cause, but a combination of powerful, interconnected factors. The primary strategy used by management was not a fair fight, but a "delay and decay" campaign. Click the bars to explore this.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3">
+                    <div class="chart-container">
+                        <canvas id="analysisChart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-2">
+                    <div id="analysis-text-container" class="card p-6 min-h-[300px]" style="background-color: var(--color-primary-light);">
+                        <h3 id="analysis-title" class="font-bold text-xl mb-3" style="color: var(--color-primary);">Click a bar to see details</h3>
+                        <p id="analysis-body" class="text-gray-700">Select a factor from the chart to learn how hospital management combined legal and psychological tactics to stop union drives. The key strategy was to drag out the legal process for years, breaking the union's momentum and solidarity—a "delay and decay" model that is extremely effective.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations Section -->
+        <section id="recommendations" class="section" style="background-color: #ffffff;">
+            <h2 class="text-center">A Path Forward: Recommendations</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+                Based on the analysis of past failures, a successful future organizing drive would require a multi-faceted, "bottom-up" strategy. With the legal system offering little help, the only path is to build overwhelming internal power and public support. Click each recommendation to expand it.
+            </p>
+            <div class="max-w-3xl mx-auto space-y-3">
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>1. Build a "Strike-Ready" Internal Structure</span>
+                        <span class="accordion-chevron">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </button>
+                    <div class="accordion-content">
+                        <p>The "delay and decay" strategy only works if the union's solidarity crumbles. The antidote is to build an organization that can't be broken. This means organizing a supermajority (75%+) *before* filing, and creating a "Contract Action Team" (CAT) with a trusted nurse leader on every unit and every shift. This structure can withstand intimidation and is ready to act.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>2. Make Patient Safety the *Only* Public Message</span>
+                        <span class="accordion-chevron">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </button>
+                    <div class="accordion-content">
+                        <p>The hospital's greatest weakness is its public image. The fight must be framed as **"The Community & Nurses vs. Corporate Greed."** Every single media appearance, rally, and flyer must be about unsafe staffing ratios. The public trusts nurses. This strategy makes the hospital defend its profits *against* patient safety—a PR battle they cannot win.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>3. Build a Broad Community-Patient Coalition</span>
+                        <span class="accordion-chevron">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </button>
+                    <div class="accordion-content">
+                        <p>Past efforts lacked visible, vocal support from community leaders, politicians, and other unions. A future drive must get these leaders to pledge support *before* the campaign launches. When the hospital fires an organizer, they must immediately receive calls from city council members and see it on the 6 o'clock news. This public pressure is the only check on their power.</p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <button class="accordion-header" aria-expanded="false">
+                        <span>4. Consider Bypassing the NLRB Entirely</span>
+                        <span class="accordion-chevron">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </span>
+                    </button>
+                    <div class="accordion-content">
+                        <p>The formal NLRB election process is often a "killing field" designed by employer lawyers. A modern alternative is "minority unionism" (like UCW-KY). This involves building a members-only union that doesn't wait for an election. They act like a union from day one: organizing "marches on the boss" to deliver safety petitions, holding press conferences to expose unsafe conditions, and publicly defending members in disciplinary meetings. This builds power and demonstrates value immediately.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-8" style="background-color: var(--color-secondary);">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-gray-300">This interactive report is for informational purposes, synthesizing publicly available data on nurse organizing efforts.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobile-menu a').forEach(item => {
+                item.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+            const sections = document.querySelectorAll('section');
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.6
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.getAttribute('href') === `#${entry.target.id}`) {
+                                item.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    navItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            const timelineDetails = {
+                '1989': {
+                    title: '1989: NPO Forms',
+                    body: 'Registered nurses in Louisville form the Nurses Professional Organization (NPO) to address concerns about patient care, staffing, and working conditions. They file for a union election at Norton Audubon, then owned by Humana. The organizing drive is ultimately unsuccessful.'
+                },
+                '1994': {
+                    title: '1994: Election Overturned',
+                    body: 'The NPO tries again at Audubon Hospital, which is now owned by the corporate healthcare giant Columbia/HCA. The union loses the election, but the NPO files charges with the National Labor Relations Board (NLRB), alleging management used illegal anti-union tactics to coerce nurses and intimidate them from voting yes. The NLRB eventually agrees and overturns the election results.'
+                },
+                '1998': {
+                    title: '1998: Norton Takeover',
+                    body: 'Norton Healthcare acquires Audubon Hospital. By this time, the NLRB has issued a bargaining order, legally requiring the hospital to negotiate a contract with the NPO. Norton Healthcare refuses, beginning what would become a nine-year-long legal battle, challenging the NLRB order.'
+                },
+                '2000s': {
+                    title: '2000s: Legal Battles',
+                    body: 'The NPO, now affiliated with the powerful California Nurses Association/National Nurses Organizing Committee (CNA/NNOC), engages in numerous legal fights. Norton Healthcare is repeatedly found to have broken labor law, paying over $570,000 in settlements for unfair labor practices. This includes the high-profile case of Jane Gentry, a vocal union supporter who was illegally fired and later won her case.'
+                },
+                '2010s': {
+                    title: '2010s-Present: New Efforts',
+                    body: 'The protracted legal battles, while often won by the union, successfully delay any contract. The original organizing momentum is lost. In more recent years, other groups like United Healthcare Workers of Kentucky (UCW-KY) have begun organizing, particularly at public hospitals, focusing on the timeless issues of safe staffing, workplace safety, and fair pay. To date, no major private Louisville hospital has a recognized nurse union.'
+                }
+            };
+
+            window.showTimelineDetail = (id) => {
+                const detailBox = document.getElementById('timeline-detail');
+                const detail = timelineDetails[id];
+                if (detail) {
+                    detailBox.innerHTML = `
+                        <h3 class="font-bold text-xl mb-3" style="color: var(--color-primary);">${detail.title}</h3>
+                        <p class="text-gray-700">${detail.body}</p>
+                    `;
+                }
+            };
+
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            window.openModal = (title, body) => {
+                modalTitle.textContent = title;
+                modalBody.textContent = body;
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.setAttribute('aria-hidden', 'false');
+                modal.querySelector('.modal-content').classList.remove('scale-95', 'opacity-0');
+            };
+
+            window.closeModal = () => {
+                modal.classList.add('opacity-0');
+                modal.querySelector('.modal-content').classList.add('scale-95', 'opacity-0');
+                modal.setAttribute('aria-hidden', 'true');
+                // Give transition time to finish before making it unclickable
+                setTimeout(() => {
+                    modal.classList.add('pointer-events-none');
+                }, 300);
+            };
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.classList.contains('pointer-events-none')) {
+                    closeModal();
+                }
+            });
+
+            const analysisDetails = {
+                'Management\'s "Delay & Decay" Legal Strategy': {
+                    title: 'Management\'s "Delay & Decay" Legal Strategy',
+                    body: 'This is the hospital\'s most powerful weapon. Management, like Norton did, refuses to bargain and then spends years (in their case, 9 years) appealing the NLRB\'s order. They know the legal system is slow. By the time the union wins in court, staff turnover is high, momentum is gone, and the solidarity is broken. They drain the union of time, money, and hope.'
+                },
+                'Illegal Firings & Intimidation': {
+                    title: 'Illegal Firings & Intimidation',
+                    body: 'To accelerate the "decay," management illegally fires vocal union supporters, like Jane Gentry at Audubon. This is a calculated move. Even if they have to pay a small settlement years later, the immediate effect is devastating: it creates an intense atmosphere of fear, silencing other nurses who might have supported the union.'
+                },
+                'Captive Audience Meetings': {
+                    title: 'Captive Audience Meetings',
+                    body: 'While the legal battle rages, management uses mandatory "captive audience" meetings to spread anti-union propaganda. They tell new nurses that the union is a "third party" that will take their money, destroy flexibility, and hurt patient care. This ensures new hires are turned against the union, replacing the original supporters who have left.'
+                },
+                'Political & Cultural Climate': {
+                    title: 'Political & Cultural Climate',
+                    body: 'Kentucky\'s "right-to-work" status and a general anti-labor political environment create a difficult backdrop. It emboldens management, as they know the courts and local political establishment are unlikely to be hostile to them. It also makes building broad public support, while essential, more challenging.'
+                }
+            };
+            
+            const analysisData = {
+                labels: [
+                    'Management\'s "Delay & Decay" Legal Strategy', 
+                    'Illegal Firings & Intimidation', 
+                    'Captive Audience Meetings', 
+                    'Political & Cultural Climate'
+                ],
+                datasets: [{
+                    label: 'Impact on Failure',
+                    data: [90, 80, 70, 45],
+                    backgroundColor: [
+                        'rgba(220, 38, 38, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(249, 115, 22, 0.7)',
+                        'rgba(251, 191, 36, 0.7)',
+                    ],
+                    borderColor: [
+                        'rgba(220, 38, 38, 1)',
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(249, 115, 22, 1)',
+                        'rgba(251, 191, 36, 1)',
+                    ],
+                    borderColor: [
+                        'rgba(220, 38, 38, 1)',
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(249, 115, 22, 1)',
+                        'rgba(251, 191, 36, 1)',
+                        'rgba(163, 163, 163, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            };
+
+            const analysisChartCtx = document.getElementById('analysisChart').getContext('2d');
+            const myAnalysisChart = new Chart(analysisChartCtx, {
+                type: 'bar',
+                data: analysisData,
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Key Barriers to Organizing',
+                            font: {
+                                size: 16
+                            },
+                            color: '#333'
+                        },
+                        tooltip: {
+                            enabled: true
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            max: 100
+                        },
+                        y: {
+                            ticks: {
+                                color: '#333',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const label = analysisData.labels[index];
+                            const detail = analysisDetails[label];
+                            if (detail) {
+                                document.getElementById('analysis-title').textContent = detail.title;
+                                document.getElementById('analysis-body').textContent = detail.body;
+                            }
+                        }
+                    },
+                    onHover: (e, elements) => {
+                         e.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                    }
+                }
+            });
+
+            document.querySelectorAll('.accordion-header').forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+                    
+                    button.setAttribute('aria-expanded', !isExpanded);
+                    content.classList.toggle('open');
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
+
